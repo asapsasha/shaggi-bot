@@ -17,6 +17,8 @@
     --light-color: #DFE6E9;
     --white: #FFFFFF;
     --card-bg: rgba(255, 255, 255, 0.98);
+    --card-bg-light: #FFFFFF;
+    --card-border: rgba(108, 92, 231, 0.1);
     
     /* Градиенты */
     --gradient-primary: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
@@ -47,6 +49,20 @@
     --telegram-bg: #18222D;
 }
 
+/* ===== ТЕМНАЯ ТЕМА ===== */
+body.dark-theme {
+    background: #121212;
+    color: #E0E0E0;
+    --card-bg: rgba(45, 52, 54, 0.95);
+    --card-bg-light: #1E1E1E;
+    --card-border: rgba(255, 255, 255, 0.1);
+    --border-light: 1px solid rgba(255, 255, 255, 0.1);
+    --border-medium: 1px solid rgba(255, 255, 255, 0.2);
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 8px 35px rgba(0, 0, 0, 0.5);
+}
+
 /* ===== БАЗОВЫЕ СТИЛИ ===== */
 * {
     box-sizing: border-box;
@@ -69,18 +85,6 @@ body {
     overflow: hidden;
     position: relative;
     transition: var(--transition-base);
-}
-
-/* ===== ТЕМНАЯ ТЕМА ===== */
-body.dark-theme {
-    background: #121212;
-    color: #E0E0E0;
-    --card-bg: rgba(45, 52, 54, 0.95);
-    --border-light: 1px solid rgba(255, 255, 255, 0.1);
-    --border-medium: 1px solid rgba(255, 255, 255, 0.2);
-    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.4);
-    --shadow-lg: 0 8px 35px rgba(0, 0, 0, 0.5);
 }
 
 /* ===== ЭКРАН ЗАГРУЗКИ ===== */
@@ -557,7 +561,7 @@ body.dark-theme {
     color: var(--light-color);
 }
 
-/* ===== КАРТОЧКИ КАТЕГОРИЙ (новый дизайн) ===== */
+/* ===== КАРТОЧКИ КАТЕГОРИЙ ===== */
 .category-card {
     margin-bottom: 1rem;
     cursor: pointer;
@@ -685,14 +689,14 @@ body.dark-theme {
 
 /* ===== КАРТОЧКИ МАРШРУТОВ ===== */
 .route-card {
-    background: var(--card-bg);
+    background: var(--card-bg-light);
     border-radius: var(--radius-lg);
     padding: 1.5rem;
     margin-bottom: 1rem;
     cursor: pointer;
     transition: var(--transition-base);
     box-shadow: var(--shadow-sm);
-    border: var(--border-light);
+    border: 1px solid var(--card-border);
     opacity: 0;
     animation: fadeIn 0.5s ease forwards;
     position: relative;
@@ -787,7 +791,7 @@ body.dark-theme {
     border-color: rgba(255, 118, 117, 0.2);
 }
 
-/* Описание маррута */
+/* Описание маршрута */
 .route-description {
     color: var(--dark-gray);
     font-size: 0.9375rem;
@@ -870,7 +874,7 @@ body.dark-theme {
 
 /* Темная тема для карточек маршрутов */
 .dark-theme .route-card {
-    background: #1E1E1E;
+    background: var(--card-bg-light);
     border-color: rgba(255, 255, 255, 0.1);
 }
 
@@ -910,11 +914,11 @@ body.dark-theme {
 
 /* Основная информация */
 .route-main-info {
-    background: var(--card-bg);
+    background: var(--card-bg-light);
     border-radius: var(--radius-lg);
     padding: 1.75rem;
     box-shadow: var(--shadow-md);
-    border: var(--border-light);
+    border: 1px solid var(--card-border);
 }
 
 .route-main-header {
@@ -1015,11 +1019,11 @@ body.dark-theme {
 
 /* Ключевые точки */
 .route-places-section {
-    background: var(--card-bg);
+    background: var(--card-bg-light);
     border-radius: var(--radius-lg);
     padding: 1.75rem;
     box-shadow: var(--shadow-md);
-    border: var(--border-light);
+    border: 1px solid var(--card-border);
 }
 
 .section-title {
@@ -1126,8 +1130,8 @@ body.dark-theme {
 }
 
 .btn-action {
-    background: var(--card-bg);
-    border: var(--border-medium);
+    background: var(--card-bg-light);
+    border: 1px solid var(--card-border);
     color: var(--dark-gray);
     padding: 1rem;
     border-radius: var(--radius-md);
@@ -1164,7 +1168,7 @@ body.dark-theme {
 
 .btn-back {
     background: transparent;
-    border: var(--border-medium);
+    border: 1px solid var(--card-border);
     color: var(--primary-color);
     padding: 1rem;
     border-radius: var(--radius-md);
@@ -1185,7 +1189,7 @@ body.dark-theme {
 /* Темная тема для деталей маршрута */
 .dark-theme .route-main-info,
 .dark-theme .route-places-section {
-    background: #1E1E1E;
+    background: var(--card-bg-light);
     border-color: rgba(255, 255, 255, 0.1);
 }
 
@@ -1222,14 +1226,14 @@ body.dark-theme {
 
 /* ===== ПАНЕЛЬ ФИЛЬТРОВ ===== */
 .filters-panel {
-    background: var(--card-bg);
+    background: var(--card-bg-light);
     border-radius: var(--radius-lg);
     margin-bottom: 1.25rem;
     padding: 1.5rem;
     transform: translateY(-1.25rem);
     opacity: 0;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    border: var(--border-light);
+    border: 1px solid var(--card-border);
     box-shadow: var(--shadow-lg);
     position: relative;
     z-index: 10;
@@ -1388,7 +1392,7 @@ body.dark-theme {
 
 /* Темная тема для фильтров */
 .dark-theme .filters-panel {
-    background: #1E1E1E;
+    background: var(--card-bg-light);
     border-color: rgba(255, 255, 255, 0.1);
 }
 
@@ -1414,12 +1418,12 @@ body.dark-theme {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1.25rem;
-    background: var(--card-bg);
+    padding: 1.125rem 1.25rem;
+    background: var(--card-bg-light);
     border-radius: var(--radius-md);
     margin-bottom: 0.875rem;
     box-shadow: var(--shadow-sm);
-    border: var(--border-light);
+    border: 1px solid var(--card-border);
     transition: var(--transition-base);
 }
 
@@ -1428,30 +1432,58 @@ body.dark-theme {
     box-shadow: var(--shadow-md);
 }
 
+/* Стили для светлой темы - улучшенная видимость */
+body:not(.dark-theme) .settings-item {
+    background: #FFFFFF;
+    border: 1px solid #E8E8E8;
+}
+
+body:not(.dark-theme) .settings-item label {
+    color: #2D3436;
+    font-weight: 600;
+}
+
+body:not(.dark-theme) .settings-item i {
+    color: var(--primary-color);
+}
+
+/* Стили для темной темы */
+.dark-theme .settings-item {
+    background: var(--card-bg-light);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dark-theme .settings-item label {
+    color: rgba(255, 255, 255, 0.95);
+    font-weight: 500;
+}
+
+.dark-theme .settings-item i {
+    color: var(--primary-light);
+}
+
 .settings-item label {
     display: flex;
     align-items: center;
     gap: 1rem;
     font-size: 1rem;
-    color: var(--dark-color);
     cursor: pointer;
     font-weight: 500;
     flex: 1;
 }
 
 .settings-item i {
-    color: var(--primary-color);
     width: 1.25rem;
     font-size: 1.125rem;
     text-align: center;
 }
 
-/* Переключатель */
+/* Переключатель - уменьшенный размер */
 .switch {
     position: relative;
     display: inline-block;
-    width: 3.375rem;
-    height: 1.75rem;
+    width: 44px;
+    height: 24px;
 }
 
 .switch input {
@@ -1467,21 +1499,22 @@ body.dark-theme {
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: #ccc;
+    background-color: #DFE6E9;
     transition: var(--transition-base);
-    border-radius: 2.125rem;
+    border-radius: 24px;
 }
 
 .slider:before {
     position: absolute;
     content: "";
-    height: 1.375rem;
-    width: 1.375rem;
-    left: 0.1875rem;
-    bottom: 0.1875rem;
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
     background-color: white;
     transition: var(--transition-base);
     border-radius: 50%;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
 input:checked + .slider {
@@ -1489,17 +1522,26 @@ input:checked + .slider {
 }
 
 input:checked + .slider:before {
-    transform: translateX(1.625rem);
+    transform: translateX(20px);
+}
+
+/* Темная тема для переключателей */
+.dark-theme .slider {
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+.dark-theme input:checked + .slider {
+    background-color: var(--primary-light);
 }
 
 /* Выпадающий список */
 #walking-speed {
-    background: var(--card-bg);
-    border: var(--border-medium);
+    background: var(--white);
+    border: 1px solid rgba(108, 92, 231, 0.2);
     color: var(--dark-color);
-    padding: 0.75rem 1rem;
+    padding: 0.625rem 1rem;
     border-radius: var(--radius-md);
-    font-size: 1rem;
+    font-size: 0.9375rem;
     font-weight: 500;
     cursor: pointer;
     transition: var(--transition-base);
@@ -1521,6 +1563,12 @@ input:checked + .slider:before {
     outline: none;
     border-color: var(--primary-color);
     box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.2);
+}
+
+.dark-theme #walking-speed {
+    background: #2D3436;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #FFFFFF;
 }
 
 /* Кнопки настроек */
@@ -1571,26 +1619,6 @@ input:checked + .slider:before {
 .btn-secondary:hover {
     background: rgba(108, 92, 231, 0.1);
     transform: translateY(-2px);
-}
-
-/* Темная тема для настроек */
-.dark-theme .settings-item {
-    background: #1E1E1E;
-    border-color: rgba(255, 255, 255, 0.1);
-}
-
-.dark-theme .settings-item label {
-    color: #FFFFFF;
-}
-
-.dark-theme .settings-item i {
-    color: var(--primary-light);
-}
-
-.dark-theme #walking-speed {
-    background: #2D3436;
-    border-color: rgba(255, 255, 255, 0.2);
-    color: #FFFFFF;
 }
 
 .dark-theme .btn-secondary {
