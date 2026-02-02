@@ -1,6 +1,6 @@
 /**
- * Основная логика приложения ШАГГИ для Telegram
- * Этот файл управляет всеми экранами, навигацией и интеграцией с Telegram
+ * ШАГГИ - Умный гид по прогулкам
+ * Полностью обновленная версия с исправлениями
  */
 
 // ===== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ =====
@@ -14,6 +14,11 @@ let appState = {
     userData: null,
     isTelegram: false,
     tg: null,
+    filters: {
+        time: 5,
+        distance: 10,
+        price: 10000
+    },
     settings: {
         darkMode: false,
         notifications: true,
@@ -28,6 +33,7 @@ const routeData = {
         title: "Романтические маршруты",
         icon: "fa-heart",
         color: "#FF7675",
+        gradient: "linear-gradient(135deg, #FF7675 0%, #FFA8A8 100%)",
         districts: {
             center: {
                 name: "Центр для влюбленных",
@@ -103,6 +109,7 @@ const routeData = {
         title: "Исторические маршруты",
         icon: "fa-landmark",
         color: "#6C5CE7",
+        gradient: "linear-gradient(135deg, #6C5CE7 0%, #A29BFE 100%)",
         districts: {
             center: {
                 name: "Сердце Москвы",
@@ -163,6 +170,7 @@ const routeData = {
         title: "Гастрономические маршруты",
         icon: "fa-utensils",
         color: "#00B894",
+        gradient: "linear-gradient(135deg, #00B894 0%, #55EFC4 100%)",
         districts: {
             center: {
                 name: "Центр гастрономии",
@@ -204,6 +212,7 @@ const routeData = {
         title: "Премиум маршруты",
         icon: "fa-crown",
         color: "#FFD700",
+        gradient: "linear-gradient(135deg, #FFD700 0%, #FFEAA7 100%)",
         districts: {
             exclusive: {
                 name: "Эксклюзивные туры",
@@ -311,6 +320,7 @@ function applyTelegramTheme() {
     
     if (theme.text_color) {
         root.style.setProperty('--dark-color', theme.text_color);
+        root.style.setProperty('--card-text', theme.text_color);
     }
     
     if (theme.button_color) {
@@ -328,6 +338,7 @@ function applyTelegramTheme() {
     // Применяем темную тему если нужно
     if (appState.tg.colorScheme === 'dark') {
         document.body.classList.add('dark-theme');
+        appState.settings.darkMode = true;
     }
 }
 
@@ -348,7 +359,7 @@ function loadTelegramUserData() {
         
         console.log('👤 Данные пользователя Telegram:', appState.userData);
         
-        // Можно персонализировать приложение
+        // Персонализируем приложение
         if (user.first_name) {
             updateUserGreeting(user.first_name);
         }
@@ -391,9 +402,6 @@ function sendTelegramEvent(eventName, data = {}) {
         ...data
     };
     
-    // Можно отправлять данные в бота
-    // appState.tg.sendData(JSON.stringify(eventData));
-    
     console.log(`📤 Telegram событие: ${eventName}`, eventData);
 }
 
@@ -424,6 +432,15 @@ function showScreen(screenId, params = {}) {
         
         // Настраиваем кнопку "Назад" в Telegram
         updateTelegramBackButton(screenId);
+        
+        // Скрываем панель фильтров если она открыта
+        if (screenId !== 'routes') {
+            const filtersPanel = document.getElementById('filters-panel');
+            if (filtersPanel) {
+                filtersPanel.classList.remove('active');
+                filtersPanel.style.display = 'none';
+            }
+        }
     }
 }
 
@@ -473,7 +490,6 @@ function goBack() {
 
 // ===== ЗАГРУЗКА ДАННЫХ И КОНТЕНТА =====
 function loadUserData() {
-    // Загружаем данные из localStorage или создаем по умолчанию
     const savedData = localStorage.getItem('shaggi_user_data');
     if (savedData) {
         try {
@@ -488,7 +504,13 @@ function loadSettings() {
     const savedSettings = localStorage.getItem('shaggi_settings');
     if (savedSettings) {
         try {
-            appState.settings = JSON.parse(savedSettings);
+            const settings = JSON.parse(savedSettings);
+            appState.settings = {...appState.settings, ...settings};
+            
+            // Применяем настройки темы
+            if (appState.settings.darkMode) {
+                document.body.classList.add('dark-theme');
+            }
         } catch (e) {
             console.error('Ошибка загрузки настроек:', e);
         }
@@ -508,11 +530,7 @@ function loadFavorites() {
 
 function saveSettings() {
     localStorage.setItem('shaggi_settings', JSON.stringify(appState.settings));
-    
-    // Показываем подтверждение
     showNotification('Настройки сохранены!');
-    
-    // Возвращаемся на главный экран
     showScreen('screen1');
 }
 
@@ -653,79 +671,53 @@ function createAppScreens() {
                 </button>
             </div>
             <div class="content" id="routes-content">
-<!-- Панель фильтров -->
-<div class="filters-panel" id="filters-panel">
-    <div class="filter-header">
-        <h3 class="filter-title"><i class="fas fa-filter"></i> Фильтры маршрутов</h3>
-        <button class="filter-close" onclick="toggleFilters()">
-            <i class="fas fa-times"></i>
-        </button>
-    </div>
-    
-    <div class="filter-body">
-        <!-- Фильтр по времени -->
-        <div class="filter-group">
-            <div class="filter-label-row">
-                <label class="filter-label">
-                    <i class="fas fa-clock"></i> Время
-                </label>
-                <span class="filter-value" id="filter-time-value">2 ч</span>
-            </div>
-            <input type="range" class="filter-slider" id="filter-time" 
-                   min="0.5" max="5" step="0.5" value="2"
-                   oninput="updateFilterValue('time', this.value)">
-            <div class="filter-limits">
-                <span>0.5 ч</span>
-                <span>5 ч</span>
-            </div>
-        </div>
-        
-        <!-- Фильтр по расстоянию -->
-        <div class="filter-group">
-            <div class="filter-label-row">
-                <label class="filter-label">
-                    <i class="fas fa-route"></i> Дистанция
-                </label>
-                <span class="filter-value" id="filter-distance-value">3 км</span>
-            </div>
-            <input type="range" class="filter-slider" id="filter-distance" 
-                   min="1" max="10" step="0.5" value="3"
-                   oninput="updateFilterValue('distance', this.value)">
-            <div class="filter-limits">
-                <span>1 км</span>
-                <span>10 км</span>
-            </div>
-        </div>
-        
-        <!-- Фильтр по цене -->
-        <div class="filter-group">
-            <div class="filter-label-row">
-                <label class="filter-label">
-                    <i class="fas fa-wallet"></i> Бюджет
-                </label>
-                <span class="filter-value" id="filter-price-value">2000 ₽</span>
-            </div>
-            <input type="range" class="filter-slider" id="filter-price" 
-                   min="0" max="10000" step="500" value="2000"
-                   oninput="updateFilterValue('price', this.value)">
-            <div class="filter-limits">
-                <span>0 ₽</span>
-                <span>10000 ₽</span>
-            </div>
-        </div>
-    </div>
-    
-    <div class="filter-footer">
-        <div class="filter-buttons">
-            <button class="btn btn-filter btn-reset" onclick="resetFilters()">
-                <i class="fas fa-redo"></i> Сбросить
-            </button>
-            <button class="btn btn-filter btn-apply" onclick="applyFilters()">
-                <i class="fas fa-check"></i> Применить
-            </button>
-        </div>
-    </div>
-</div>
+                <!-- Панель фильтров (скрыта по умолчанию) -->
+                <div class="filters-panel" id="filters-panel">
+                    <div class="filter-header">
+                        <h3 class="filter-title"><i class="fas fa-filter"></i> Фильтры</h3>
+                        <button class="filter-close" onclick="toggleFilters()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="filter-body">
+                        <div class="filter-group">
+                            <label class="filter-label">
+                                <i class="fas fa-clock"></i> До <span id="filter-time-value">2</span> ч
+                            </label>
+                            <input type="range" class="filter-slider" id="filter-time" 
+                                   min="0.5" max="5" step="0.5" value="2"
+                                   oninput="updateFilterValue('time', this.value)">
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label class="filter-label">
+                                <i class="fas fa-route"></i> До <span id="filter-distance-value">3</span> км
+                            </label>
+                            <input type="range" class="filter-slider" id="filter-distance" 
+                                   min="1" max="10" step="0.5" value="3"
+                                   oninput="updateFilterValue('distance', this.value)">
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label class="filter-label">
+                                <i class="fas fa-wallet"></i> До <span id="filter-price-value">2000</span> ₽
+                            </label>
+                            <input type="range" class="filter-slider" id="filter-price" 
+                                   min="0" max="10000" step="500" value="2000"
+                                   oninput="updateFilterValue('price', this.value)">
+                        </div>
+                    </div>
+                    
+                    <div class="filter-footer">
+                        <button class="btn btn-reset" onclick="resetFilters()">
+                            <i class="fas fa-redo"></i> Сбросить
+                        </button>
+                        <button class="btn btn-apply" onclick="applyFilters()">
+                            <i class="fas fa-check"></i> Применить
+                        </button>
+                    </div>
+                </div>
                 
                 <!-- Список маршрутов -->
                 <div id="routes-list"></div>
@@ -806,6 +798,9 @@ function createAppScreens() {
         </div>
     `;
     
+    // Инициализируем фильтры
+    initFilters();
+    
     // Обновляем счетчик избранного
     updateFavoritesCount();
 }
@@ -814,7 +809,14 @@ function createAppScreens() {
 function updateUserGreeting(name) {
     const greetingElement = document.getElementById('user-greeting');
     if (greetingElement) {
-        greetingElement.textContent = `Привет, ${name}!`;
+        const hours = new Date().getHours();
+        let greeting = 'Доброй ночи';
+        
+        if (hours >= 5 && hours < 12) greeting = 'Доброе утро';
+        else if (hours >= 12 && hours < 18) greeting = 'Добрый день';
+        else if (hours >= 18 && hours < 23) greeting = 'Добрый вечер';
+        
+        greetingElement.textContent = `${greeting}, ${name}!`;
     }
 }
 
@@ -896,9 +898,8 @@ function loadCategories() {
         const category = routeData[categoryKey];
         
         const categoryElement = document.createElement('div');
-        categoryElement.className = 'category-item fade-in';
+        categoryElement.className = 'category-card fade-in';
         categoryElement.style.animationDelay = `${delay}s`;
-        categoryElement.style.borderLeftColor = category.color;
         categoryElement.onclick = () => selectCategory(categoryKey);
         
         // Подсчет маршрутов в категории
@@ -908,12 +909,18 @@ function loadCategories() {
         }
         
         categoryElement.innerHTML = `
-            <div class="category-header">
-                <i class="fas ${category.icon}" style="color: ${category.color}"></i>
-                <h3>${category.title}</h3>
-                <span class="route-count">${routeCount}</span>
+            <div class="category-card-inner" style="background: ${category.gradient}">
+                <div class="category-icon">
+                    <i class="fas ${category.icon}"></i>
+                </div>
+                <div class="category-content">
+                    <h3>${category.title}</h3>
+                    <p class="category-stats">${routeCount} маршрутов • ${Object.keys(category.districts).length} района</p>
+                </div>
+                <div class="category-arrow">
+                    <i class="fas fa-chevron-right"></i>
+                </div>
             </div>
-            <p class="category-description">${Object.keys(category.districts).length} района</p>
         `;
         
         content.appendChild(categoryElement);
@@ -941,17 +948,23 @@ function loadDistricts() {
         const district = category.districts[districtKey];
         
         const districtElement = document.createElement('div');
-        districtElement.className = 'category-item fade-in';
+        districtElement.className = 'category-card fade-in';
         districtElement.style.animationDelay = `${delay}s`;
         districtElement.onclick = () => selectDistrict(districtKey);
         
         districtElement.innerHTML = `
-            <div class="category-header">
-                <i class="fas fa-map-marker-alt" style="color: ${category.color}"></i>
-                <h3>${district.name}</h3>
-                <span class="route-count">${district.routes.length}</span>
+            <div class="category-card-inner" style="background: ${category.gradient}">
+                <div class="category-icon">
+                    <i class="fas fa-map-marker-alt"></i>
+                </div>
+                <div class="category-content">
+                    <h3>${district.name}</h3>
+                    <p class="category-stats">${district.routes.length} маршрут${district.routes.length > 1 ? 'а' : ''}</p>
+                </div>
+                <div class="category-arrow">
+                    <i class="fas fa-chevron-right"></i>
+                </div>
             </div>
-            <p class="category-description">${district.routes.length} маршрут${district.routes.length > 1 ? 'а' : ''}</p>
         `;
         
         content.appendChild(districtElement);
@@ -973,7 +986,7 @@ function loadRoutes() {
     const category = routeData[appState.currentCategory];
     const district = category.districts[appState.currentDistrict];
     
-    title.textContent = `${district.name} - ${category.title}`;
+    title.textContent = `${district.name}`;
     content.innerHTML = '';
     
     // Используем сохраненные фильтры или значения по умолчанию
@@ -1005,7 +1018,7 @@ function loadRoutes() {
     let delay = 0.1;
     filteredRoutes.forEach(route => {
         const routeElement = document.createElement('div');
-        routeElement.className = 'route-item fade-in';
+        routeElement.className = 'route-card fade-in';
         routeElement.style.animationDelay = `${delay}s`;
         routeElement.onclick = () => selectRoute(route);
         
@@ -1013,20 +1026,29 @@ function loadRoutes() {
         const isFavorite = appState.favorites.some(fav => fav.id === route.id);
         
         routeElement.innerHTML = `
-            <div class="route-header">
-                <h3>${route.name}</h3>
-                <div>
+            <div class="route-card-header">
+                <div class="route-title-section">
+                    <h3>${route.name}</h3>
                     <span class="route-rating">
                         <i class="fas fa-star"></i> ${route.rating}
                     </span>
-                    ${isFavorite ? '<span class="favorite-badge"><i class="fas fa-heart"></i></span>' : ''}
                 </div>
+                ${isFavorite ? '<div class="route-favorite active"><i class="fas fa-heart"></i></div>' : ''}
             </div>
             <p class="route-description">${route.description}</p>
-            <div class="route-info">
-                <span><i class="fas fa-clock"></i> ${route.time} ч</span>
-                <span><i class="fas fa-route"></i> ${route.distance} км</span>
-                <span><i class="fas fa-wallet"></i> ${route.price} ₽</span>
+            <div class="route-stats">
+                <div class="route-stat">
+                    <i class="fas fa-clock"></i>
+                    <span>${route.time} ч</span>
+                </div>
+                <div class="route-stat">
+                    <i class="fas fa-route"></i>
+                    <span>${route.distance} км</span>
+                </div>
+                <div class="route-stat">
+                    <i class="fas fa-wallet"></i>
+                    <span>${route.price} ₽</span>
+                </div>
             </div>
         `;
         
@@ -1052,144 +1074,143 @@ function loadRouteDetails() {
     title.textContent = route.name;
     
     content.innerHTML = `
-        <div class="route-details-card">
+        <div class="route-details-container">
             <div class="route-main-info">
-                <div class="info-row">
-                    <span><i class="fas fa-clock"></i> Время:</span>
-                    <span class="info-value">${route.time} часа</span>
+                <div class="route-main-header">
+                    <h3>${route.name}</h3>
+                    <div class="route-main-rating">
+                        <span class="rating-stars">
+                            ${getStarRating(route.rating)}
+                        </span>
+                        <span class="rating-text">${route.rating}/5 (${route.reviews} отзывов)</span>
+                    </div>
                 </div>
-                <div class="info-row">
-                    <span><i class="fas fa-route"></i> Дистанция:</span>
-                    <span class="info-value">${route.distance} км</span>
-                </div>
-                <div class="info-row">
-                    <span><i class="fas fa-wallet"></i> Бюджет:</span>
-                    <span class="info-value">${route.price} ₽</span>
-                </div>
-                <div class="info-row">
-                    <span><i class="fas fa-star"></i> Рейтинг:</span>
-                    <span class="info-value">${route.rating}/5 (${route.reviews} отзывов)</span>
+                <p class="route-main-description">${route.description}</p>
+                
+                <div class="route-details-grid">
+                    <div class="detail-item">
+                        <div class="detail-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="detail-content">
+                            <span class="detail-label">Время</span>
+                            <span class="detail-value">${route.time} часа</span>
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-icon">
+                            <i class="fas fa-route"></i>
+                        </div>
+                        <div class="detail-content">
+                            <span class="detail-label">Дистанция</span>
+                            <span class="detail-value">${route.distance} км</span>
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-icon">
+                            <i class="fas fa-wallet"></i>
+                        </div>
+                        <div class="detail-content">
+                            <span class="detail-label">Бюджет</span>
+                            <span class="detail-value">${route.price} ₽</span>
+                        </div>
+                    </div>
                 </div>
             </div>
             
-            <div class="route-places">
-                <h3><i class="fas fa-map-pin"></i> Ключевые точки маршрута:</h3>
-                <ul class="places-list">
+            <div class="route-places-section">
+                <h3 class="section-title">
+                    <i class="fas fa-map-marker-alt"></i>
+                    Ключевые точки маршрута
+                </h3>
+                <div class="places-list">
                     ${route.places.map((place, index) => `
-                        <li>
-                            <span class="place-number">${index + 1}</span>
-                            <div>
-                                <strong>${place.name}</strong>
-                                <p>${place.description}</p>
+                        <div class="place-item">
+                            <div class="place-number">${index + 1}</div>
+                            <div class="place-content">
+                                <h4 class="place-name">${place.name}</h4>
+                                <p class="place-description">${place.description}</p>
                             </div>
-                        </li>
+                        </div>
                     `).join('')}
-                </ul>
+                </div>
             </div>
             
-            <div class="route-actions">
-                <button class="btn btn-accent" onclick="startNavigation()">
-                    <i class="fas fa-play"></i> Начать навигацию
+            <div class="route-actions-section">
+                <button class="btn btn-primary btn-start" onclick="startNavigation()">
+                    <i class="fas fa-play"></i>
+                    <span>Начать навигацию</span>
                 </button>
-                <button class="btn ${isFavorite ? 'btn-accent' : ''}" onclick="toggleFavorite()">
-                    <i class="fas fa-heart"></i> ${isFavorite ? 'В избранном' : 'В избранное'}
-                </button>
-                <button class="btn" onclick="shareRoute()">
-                    <i class="fas fa-share-alt"></i> Поделиться
-                </button>
-                <button class="btn btn-secondary" onclick="showScreen('routes')">
-                    <i class="fas fa-arrow-left"></i> Назад к маршрутам
+                <div class="action-buttons">
+                    <button class="btn-action ${isFavorite ? 'active' : ''}" onclick="toggleFavorite()">
+                        <i class="fas fa-heart"></i>
+                        <span>${isFavorite ? 'В избранном' : 'В избранное'}</span>
+                    </button>
+                    <button class="btn-action" onclick="shareRoute()">
+                        <i class="fas fa-share-alt"></i>
+                        <span>Поделиться</span>
+                    </button>
+                </div>
+                <button class="btn btn-secondary btn-back" onclick="showScreen('routes')">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>Назад к маршрутам</span>
                 </button>
             </div>
         </div>
     `;
-}
-// Показать уведомление
-function showNotification(message, duration = 3000) {
-    // Удаляем старое уведомление если есть
-    const oldNotification = document.querySelector('.notification');
-    if (oldNotification) {
-        oldNotification.remove();
-    }
-    
-    // Создаем новое уведомление
-    const notification = document.createElement('div');
-    notification.className = 'notification';
-    notification.innerHTML = `
-        <div class="notification-content">
-            <i class="fas fa-check-circle"></i>
-            <span>${message}</span>
-        </div>
-    `;
-    
-    // Добавляем стили
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        left: 50%;
-        transform: translateX(-50%) translateY(-100px);
-        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-        color: white;
-        padding: 12px 24px;
-        border-radius: 12px;
-        box-shadow: 0 8px 25px rgba(108, 92, 231, 0.4);
-        z-index: 9999;
-        animation: notificationSlideIn 0.4s ease forwards;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        max-width: 90%;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    `;
-    
-    // Добавляем в DOM
-    document.body.appendChild(notification);
-    
-    // Удаляем через указанное время
-    setTimeout(() => {
-        notification.style.animation = 'notificationSlideOut 0.4s ease forwards';
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.parentNode.removeChild(notification);
-            }
-        }, 400);
-    }, duration);
 }
 
-// Добавим анимации для уведомлений в CSS
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes notificationSlideIn {
-        0% {
-            transform: translateX(-50%) translateY(-100px);
-            opacity: 0;
-        }
-        100% {
-            transform: translateX(-50%) translateY(0);
-            opacity: 1;
-        }
+function getStarRating(rating) {
+    let stars = '';
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
+    
+    for (let i = 0; i < fullStars; i++) {
+        stars += '<i class="fas fa-star"></i>';
     }
     
-    @keyframes notificationSlideOut {
-        0% {
-            transform: translateX(-50%) translateY(0);
-            opacity: 1;
-        }
-        100% {
-            transform: translateX(-50%) translateY(-100px);
-            opacity: 0;
-        }
+    if (hasHalfStar) {
+        stars += '<i class="fas fa-star-half-alt"></i>';
     }
     
-    .notification i {
-        font-size: 18px;
-        color: #FFD700;
+    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+    for (let i = 0; i < emptyStars; i++) {
+        stars += '<i class="far fa-star"></i>';
     }
-`;
-document.head.appendChild(style);
-// Обновление значения фильтра в реальном времени
+    
+    return stars;
+}
+
+// ===== ФИЛЬТРЫ =====
+function initFilters() {
+    // Устанавливаем значения фильтров из состояния
+    updateFilterValue('time', appState.filters.time);
+    updateFilterValue('distance', appState.filters.distance);
+    updateFilterValue('price', appState.filters.price);
+    
+    // Устанавливаем значения слайдеров
+    document.getElementById('filter-time').value = appState.filters.time;
+    document.getElementById('filter-distance').value = appState.filters.distance;
+    document.getElementById('filter-price').value = appState.filters.price;
+}
+
+function toggleFilters() {
+    const filtersPanel = document.getElementById('filters-panel');
+    if (!filtersPanel) return;
+    
+    if (filtersPanel.style.display === 'none' || filtersPanel.style.display === '') {
+        filtersPanel.style.display = 'block';
+        setTimeout(() => {
+            filtersPanel.classList.add('active');
+        }, 10);
+    } else {
+        filtersPanel.classList.remove('active');
+        setTimeout(() => {
+            filtersPanel.style.display = 'none';
+        }, 300);
+    }
+}
+
 function updateFilterValue(type, value) {
     const valueElement = document.getElementById(`filter-${type}-value`);
     if (!valueElement) return;
@@ -1203,49 +1224,42 @@ function updateFilterValue(type, value) {
     }
 }
 
-// Показать/скрыть панель фильтров
-function toggleFilters() {
-    const filtersPanel = document.getElementById('filters-panel');
-    if (!filtersPanel) return;
-    
-    filtersPanel.classList.toggle('active');
-}
-
-// Сбросить фильтры к значениям по умолчанию
 function resetFilters() {
-    document.getElementById('filter-time').value = 2;
-    document.getElementById('filter-distance').value = 3;
-    document.getElementById('filter-price').value = 2000;
+    // Сбрасываем фильтры к значениям по умолчанию
+    appState.filters = { time: 5, distance: 10, price: 10000 };
     
-    updateFilterValue('time', 2);
-    updateFilterValue('distance', 3);
-    updateFilterValue('price', 2000);
+    // Обновляем UI слайдеров
+    document.getElementById('filter-time').value = 5;
+    document.getElementById('filter-distance').value = 10;
+    document.getElementById('filter-price').value = 10000;
     
-    // Сразу применяем сброшенные фильтры
+    // Обновляем отображаемые значения
+    updateFilterValue('time', 5);
+    updateFilterValue('distance', 10);
+    updateFilterValue('price', 10000);
+    
+    // Применяем фильтры
     applyFilters();
     
     // Закрываем панель фильтров
     toggleFilters();
     
-    // Показываем уведомление
     showNotification('Фильтры сброшены');
 }
 
-// Применить фильтры
 function applyFilters() {
-    // Получаем текущие значения фильтров
+    // Сохраняем текущие значения фильтров
     const timeFilter = parseFloat(document.getElementById('filter-time').value);
     const distanceFilter = parseFloat(document.getElementById('filter-distance').value);
     const priceFilter = parseFloat(document.getElementById('filter-price').value);
     
-    // Сохраняем в состоянии приложения
     appState.filters = {
         time: timeFilter,
         distance: distanceFilter,
         price: priceFilter
     };
     
-    // Обновляем список маршрутов с учетом фильтров
+    // Обновляем список маршрутов
     if (appState.currentScreen === 'routes') {
         loadRoutes();
     }
@@ -1253,48 +1267,7 @@ function applyFilters() {
     // Закрываем панель фильтров
     toggleFilters();
     
-    // Показываем уведомление
-    showNotification(`Фильтры применены: ${timeFilter} ч, ${distanceFilter} км, ${priceFilter} ₽`);
-    
-    // Отправляем событие в Telegram
-    sendTelegramEvent('filters_applied', appState.filters);
-}
-// ===== ФИЛЬТРЫ =====
-function toggleFilters() {
-    const filtersPanel = document.getElementById('filters-panel');
-    if (!filtersPanel) return;
-    
-    filtersPanel.classList.toggle('active');
-}
-
-function resetFilters() {
-    document.getElementById('filter-time').value = 2;
-    document.getElementById('filter-distance').value = 3;
-    document.getElementById('filter-price').value = 2000;
-    
-    updateFilterValues();
-    applyFilters();
-}
-
-function applyFilters() {
-    updateFilterValues();
-    loadRoutes();
-    
-    // Закрываем панель фильтров
-    const filtersPanel = document.getElementById('filters-panel');
-    if (filtersPanel) {
-        filtersPanel.classList.remove('active');
-    }
-}
-
-function updateFilterValues() {
-    const timeValue = document.getElementById('filter-time').value;
-    const distanceValue = document.getElementById('filter-distance').value;
-    const priceValue = document.getElementById('filter-price').value;
-    
-    document.getElementById('filter-time-value').textContent = timeValue;
-    document.getElementById('filter-distance-value').textContent = distanceValue;
-    document.getElementById('filter-price-value').textContent = priceValue;
+    showNotification(`Применены фильтры: ${timeFilter} ч, ${distanceFilter} км, ${priceFilter} ₽`);
 }
 
 // ===== ИЗБРАННОЕ =====
@@ -1329,7 +1302,7 @@ function loadFavoritesScreen() {
     
     appState.favorites.forEach((route, index) => {
         const routeElement = document.createElement('div');
-        routeElement.className = 'route-item fade-in';
+        routeElement.className = 'route-card fade-in';
         routeElement.style.animationDelay = `${index * 0.1}s`;
         routeElement.onclick = () => {
             appState.currentRoute = route;
@@ -1337,24 +1310,36 @@ function loadFavoritesScreen() {
         };
         
         routeElement.innerHTML = `
-            <div class="route-header">
-                <h3>${route.name}</h3>
-                <div>
+            <div class="route-card-header">
+                <div class="route-title-section">
+                    <h3>${route.name}</h3>
                     <span class="route-rating">
                         <i class="fas fa-star"></i> ${route.rating}
                     </span>
-                    <span class="favorite-badge active"><i class="fas fa-heart"></i></span>
+                </div>
+                <div class="route-favorite active">
+                    <i class="fas fa-heart"></i>
                 </div>
             </div>
             <p class="route-description">${route.description}</p>
-            <div class="route-info">
-                <span><i class="fas fa-clock"></i> ${route.time} ч</span>
-                <span><i class="fas fa-route"></i> ${route.distance} км</span>
-                <span><i class="fas fa-wallet"></i> ${route.price} ₽</span>
+            <div class="route-stats">
+                <div class="route-stat">
+                    <i class="fas fa-clock"></i>
+                    <span>${route.time} ч</span>
+                </div>
+                <div class="route-stat">
+                    <i class="fas fa-route"></i>
+                    <span>${route.distance} км</span>
+                </div>
+                <div class="route-stat">
+                    <i class="fas fa-wallet"></i>
+                    <span>${route.price} ₽</span>
+                </div>
             </div>
             <div class="route-actions">
-                <button class="btn btn-small" onclick="removeFromFavorites('${route.id}', event)">
-                    <i class="fas fa-trash"></i> Удалить
+                <button class="btn btn-small btn-remove" onclick="removeFromFavorites('${route.id}', event)">
+                    <i class="fas fa-trash"></i>
+                    <span>Удалить</span>
                 </button>
             </div>
         `;
@@ -1391,12 +1376,6 @@ function toggleFavorite() {
     } else if (appState.currentScreen === 'favorites') {
         loadFavoritesScreen();
     }
-    
-    // Отправляем событие в Telegram
-    sendTelegramEvent(index === -1 ? 'favorite_added' : 'favorite_removed', {
-        route_id: route.id,
-        route_name: route.name
-    });
 }
 
 function removeFromFavorites(routeId, event) {
@@ -1419,13 +1398,6 @@ function loadSettingsScreen() {
     document.getElementById('notifications').checked = appState.settings.notifications;
     document.getElementById('sounds').checked = appState.settings.sounds;
     document.getElementById('walking-speed').value = appState.settings.walkingSpeed;
-    
-    // Применяем темную тему если нужно
-    if (appState.settings.darkMode) {
-        document.body.classList.add('dark-theme');
-    } else {
-        document.body.classList.remove('dark-theme');
-    }
 }
 
 function toggleDarkMode() {
@@ -1543,49 +1515,15 @@ function shareRoute() {
     });
 }
 
-// ===== КНОПКА ЭКСТРЕННОЙ ПОМОЩИ =====
-function emergencyButton() {
-    console.log('🚨 Нажата кнопка экстренной помощи');
-    
-    // Вибрация (если поддерживается)
-    if (navigator.vibrate) {
-        navigator.vibrate([200, 100, 200]);
-    }
-    
-    if (appState.isTelegram && appState.tg) {
-        // В Telegram используем встроенный алерт
-        appState.tg.showAlert('Вы уверены, что хотите вызвать экстренную помощь?', {
-            title: 'Экстренная помощь',
-            buttons: [
-                { id: 'yes', type: 'destructive', text: 'Вызвать помощь' },
-                { id: 'no', type: 'cancel', text: 'Отмена' }
-            ]
-        }).then((buttonId) => {
-            if (buttonId === 'yes') {
-                appState.tg.showAlert('Помощь вызвана! С вами свяжутся в ближайшее время. Сохраняйте спокойствие.', {
-                    title: 'ШАГГИ - Помощь'
-                });
-                
-                // Интенсивная вибрация
-                if (navigator.vibrate) {
-                    navigator.vibrate([300, 100, 300, 100, 300]);
-                }
-                
-                // Отправляем событие в Telegram
-                sendTelegramEvent('emergency_called');
-            }
-        });
-    } else {
-        // В браузере
-        if (confirm('ВЫЗВАТЬ ЭКСТРЕННУЮ ПОМОЩЬ?\n\nБудет совершен экстренный вызов.')) {
-            alert('Помощь вызвана! Сохраняйте спокойствие, с вами свяжутся.\n\nНомер экстренной службы: 112');
-        }
-    }
-}
-
-// ===== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ =====
+// ===== УВЕДОМЛЕНИЯ =====
 function showNotification(message, duration = 3000) {
-    // Создаем элемент уведомления
+    // Удаляем старое уведомление если есть
+    const oldNotification = document.querySelector('.notification');
+    if (oldNotification) {
+        oldNotification.remove();
+    }
+    
+    // Создаем новое уведомление
     const notification = document.createElement('div');
     notification.className = 'notification';
     notification.innerHTML = `
@@ -1600,27 +1538,34 @@ function showNotification(message, duration = 3000) {
         position: fixed;
         top: 20px;
         left: 50%;
-        transform: translateX(-50%);
-        background: var(--primary-color);
+        transform: translateX(-50%) translateY(-100px);
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
         color: white;
         padding: 12px 24px;
         border-radius: 12px;
-        box-shadow: 0 4px 20px rgba(108, 92, 231, 0.3);
+        box-shadow: 0 8px 25px rgba(108, 92, 231, 0.4);
         z-index: 9999;
-        animation: slideDown 0.3s ease;
+        animation: notificationSlideIn 0.4s ease forwards;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        max-width: 90%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     `;
     
     // Добавляем в DOM
     document.body.appendChild(notification);
     
-    // Удаляем через duration
+    // Удаляем через указанное время
     setTimeout(() => {
-        notification.style.animation = 'slideUp 0.3s ease';
+        notification.style.animation = 'notificationSlideOut 0.4s ease forwards';
         setTimeout(() => {
             if (notification.parentNode) {
                 notification.parentNode.removeChild(notification);
             }
-        }, 300);
+        }, 400);
     }, duration);
 }
 
@@ -1628,7 +1573,6 @@ function showNotification(message, duration = 3000) {
 // Делаем функции доступными глобально для использования в onclick
 window.showScreen = showScreen;
 window.goBack = goBack;
-window.emergencyButton = emergencyButton;
 window.toggleFavorite = toggleFavorite;
 window.startNavigation = startNavigation;
 window.shareRoute = shareRoute;
@@ -1642,22 +1586,35 @@ window.resetFilters = resetFilters;
 window.applyFilters = applyFilters;
 window.removeFromFavorites = removeFromFavorites;
 window.updateFilterValue = updateFilterValue;
-window.toggleFilters = toggleFilters;
-window.resetFilters = resetFilters;
-window.applyFilters = applyFilters;
-// Инициализация фильтров при загрузке
-window.addEventListener('load', function() {
-    // Обновляем значения фильтров
-    updateFilterValues();
-    
-    // Настраиваем обработчики для слайдеров
-    const sliders = ['filter-time', 'filter-distance', 'filter-price'];
-    sliders.forEach(sliderId => {
-        const slider = document.getElementById(sliderId);
-        if (slider) {
-            slider.addEventListener('input', updateFilterValues);
-        }
-    });
-});
 
-console.log('✅ ШАГГИ: Приложение успешно загружено и готово к работе!');
+// Инициализация при загрузке
+window.addEventListener('load', function() {
+    // Добавляем CSS анимации для уведомлений
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes notificationSlideIn {
+            0% {
+                transform: translateX(-50%) translateY(-100px);
+                opacity: 0;
+            }
+            100% {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes notificationSlideOut {
+            0% {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
+            }
+            100% {
+                transform: translateX(-50%) translateY(-100px);
+                opacity: 0;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    console.log('✅ ШАГГИ: Приложение полностью загружено и готово к работе!');
+});
